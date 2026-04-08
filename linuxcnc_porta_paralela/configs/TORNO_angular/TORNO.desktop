@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=TORNO
+Exec=/usr/bin/linuxcnc '/home/cnc/linuxcnc/configs/TORNO/TORNO.ini'
+Type=Application
+Comment=
+Icon=linuxcncicon
+GenericName=

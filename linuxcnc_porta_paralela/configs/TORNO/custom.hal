@@ -1,0 +1,44 @@
+# Include your customized HAL commands here
+# This file will not be overwritten when you run stepconf again
+
+#############################adicoes chatgpt/gemini##############################
+loadrt not count=2
+loadrt or2 count=1
+addf not.0 servo-thread
+addf not.1 servo-thread
+addf or2.0 servo-thread
+
+#############################adicoes gemini##############################
+
+#############################Torre##############################
+
+setp encoder.4.position-scale 1
+#net torre-ph-b parport.1.pin-12-in-not => encoder.4.phase-A
+#net torre-ph-a parport.0.pin-10-in-not => encoder.4.phase-B
+#net torre-reset parport.0.pin-12-in-not => encoder.4.reset
+
+net torre-pos encoder.4.position => motion.analog-in-00
+
+#setp limites.0.gain 1
+#setp limites.0.npulsos 400
+
+#############################adicoes chatgpt##############################
+net sol-torre-cmd       motion.digital-out-06    => or2.0.in0
+net is-on               halui.machine.is-on      => not.1.in
+net machine-off         not.1.out                => or2.0.in1
+net sol-torre           or2.0.out                => parport.1.pin-16-out
+##############################################################################################
+
+#net sol-torre  motion.digital-out-06 => parport.1.pin-16-out
+net enable-c  motion.digital-out-07 => parport.0.pin-17-out
+#net c-enable joint.2.amp-enable-out => parport.0.pin-17-out
+#net c-enable => stepgen.2.enable
+#net stepgen.2.enable 0
+
+#net torre-fwd  motion.digital-out-07 => parport.0.pin-07-out
+
+#net torre-rev  motion.digital-out-08 => parport.0.pin-06-out
+
+
+#net tool-change-loopback iocontrol.0.tool-change => iocontrol.0.tool-changed
+#net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared

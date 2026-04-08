@@ -1,0 +1,281 @@
+# Include your customized HAL commands here
+# The commands in this file are run after the AXIS GUI (including PyVCP panel) starts
+
+# **** Setup of spindle speed display using pyvcp -START ****
+# **** Use ACTUAL spindle velocity from spindle encoder
+# **** spindle-velocity-feedback-rps bounces around so we filter it with lowpass
+# **** spindle-velocity-feedback-rps is signed so we use absolute component to remove sign
+# **** ACTUAL velocity is in RPS not RPM so we scale it.
+
+net limit-z-min ini.z.min_limit => motion.analog-out-00
+net limit-z-max ini.z.max_limit => motion.analog-out-01
+net limit-x-min ini.x.min_limit => motion.analog-out-02
+net limit-x-max ini.x.max_limit => motion.analog-out-03
+
+
+setp scale.0.gain 60
+setp lowpass.0.gain 0.100000
+net spindle-velocity-feedback-rps               => lowpass.0.in
+net spindle-fb-filtered-rps      lowpass.0.out  => abs.0.in
+net spindle-fb-filtered-abs-rps  abs.0.out      => scale.0.in
+net spindle-fb-filtered-abs-rpm  scale.0.out    => pyvcp.spindle-speed
+
+# **** set up spindle at speed indicator ****
+
+net spindle-cmd-rps-abs             =>  near.0.in1
+net spindle-velocity-feedback-rps   =>  near.0.in2
+net spindle-at-speed                <=  near.0.out
+setp near.0.scale 2.00000
+net spindle-at-speed       => pyvcp.spindle-at-speed-led
+
+net torre-pos pyvcp.pos-encoder
+
+
+
+##############MANIVELA #################
+net mpg-phase-a encoder.1.phase-A => parport.0.pin-10-in => classicladder.0.in-38
+net mpg-phase-b encoder.1.phase-B => parport.0.pin-11-in => classicladder.0.in-39
+
+net feed-enc-a encoder.2.phase-B => classicladder.0.out-38
+net feed-enc-b encoder.2.phase-A => classicladder.0.out-39
+
+#net s-enc-a encoder.3.phase-A => parport.0.pin-11-in-not
+#net s-enc-b encoder.3.phase-B => parport.0.pin-12-in-not
+
+setp axis.x.jog-vel-mode 1
+setp axis.z.jog-vel-mode 1
+
+setp encoder.1.x4-mode 0
+setp encoder.2.x4-mode 0
+setp encoder.3.x4-mode 0
+
+net mpg-counts_x axis.x.jog-counts <= encoder.1.counts
+net mpg-counts_x axis.z.jog-counts
+
+setp halui.feed-override.scale 0.05
+setp halui.rapid-override.scale 0.05
+net mpg-feedrate-counts halui.feed-override.counts <= encoder.2.counts
+net mpg-feedrate-counts halui.rapid-override.counts 
+
+setp halui.spindle.0.override.scale 0.05
+net spn-counts halui.spindle.0.override.counts <= encoder.3.counts
+
+setp scale.5.gain 0.004
+net scale-adap encoder.1.velocity => scale.5.in
+net adap-feed motion.adaptive-feed => scale.5.out
+
+
+
+###############################################################
+
+
+
+
+# Tool Number
+net tool_numb iocontrol.0.tool-number => pyvcp.tool-number
+
+# MDI Commands
+net too1-1 halui.mdi-command-00 <= pyvcp.tool-1
+net too1-2 halui.mdi-command-01 <= pyvcp.tool-2
+net too1-3 halui.mdi-command-02 <= pyvcp.tool-3
+net too1-4 halui.mdi-command-03 <= pyvcp.tool-4
+net too1-5 halui.mdi-command-04 <= pyvcp.tool-5
+net too1-6 halui.mdi-command-05 <= pyvcp.tool-6
+net too1-7 halui.mdi-command-06 <= pyvcp.tool-7
+net too1-8 halui.mdi-command-07 <= pyvcp.tool-8
+net too1-9 halui.mdi-command-08 <= pyvcp.tool-9
+net too1-10 halui.mdi-command-09 <= pyvcp.tool-10
+net too1-11 halui.mdi-command-10 <= pyvcp.tool-11
+net too1-12 halui.mdi-command-11 <= pyvcp.tool-12
+net too1-13 halui.mdi-command-12 <= pyvcp.tool-13
+net too1-14 halui.mdi-command-13 <= pyvcp.tool-14
+net too1-15 halui.mdi-command-14 <= pyvcp.tool-15
+net too1-16 halui.mdi-command-30 <= pyvcp.tool-16
+net m3 halui.mdi-command-15 <= classicladder.0.out-22
+net m4 halui.mdi-command-16 <= classicladder.0.out-23
+net m5 halui.mdi-command-17 <= classicladder.0.out-24
+net SETARX halui.mdi-command-18 <= pyvcp.seta-x
+net SETARXNEG halui.mdi-command-19 <= pyvcp.seta-xneg
+net SETARZ halui.mdi-command-20 <= pyvcp.seta-z
+net RESTAURAR halui.mdi-command-21 <= pyvcp.restaura
+#net SET-RPM halui.mdi-command-22 <= pyvcp.set-rpm
+net SETARZ-NEG halui.mdi-command-23 <= pyvcp.seta-z-neg
+net reset-py halui.mdi-command-24 <= pyvcp.resetar
+net ativa halui.mdi-command-25 <= pyvcp.ativa
+net desativa halui.mdi-command-26 <= pyvcp.desativa
+net sole-py halui.mdi-command-27 <= pyvcp.solenoide
+net cw-py halui.mdi-command-28 <= pyvcp.gira-cw-py
+net ccw-py halui.mdi-command-29 <= pyvcp.gira-ccw-py
+
+net reset-encod encoder.1.reset => classicladder.0.out-25
+
+
+net m33-h halui.spindle.0.forward <= classicladder.0.out-06
+net m44-h halui.spindle.0.reverse <= classicladder.0.out-07
+net m55-h halui.spindle.0.stop <= classicladder.0.out-08
+
+
+loadrt time
+#CHATGPT MANDOU COMENTAR, NAO SEI SE É LOGICA DELE OU DO ENEIAS ESSE LOADRT
+#loadrt not count=1  
+
+addf time.0 servo-thread
+#CHATGPT MANDOU COMENTAR, NAO SEI SE É LOGICA DELE OU DO ENEIAS ESSE LOADRT
+#addf not.0 servo-thread 
+net cycle-timer time.0.start <= not.0.out
+net cycle-seconds pyvcp.time-seconds <= time.0.seconds
+net cycle-minutes pyvcp.time-minutes <= time.0.minutes
+net cycle-hours pyvcp.time-hours <= time.0.hours
+
+net dout-00 <= motion.digital-out-00
+net dout-01 <= motion.digital-out-01
+net dout-02 <= motion.digital-out-02
+net dout-03 <= motion.digital-out-03
+net dout-04 <= motion.digital-out-04
+net dout-05 <= motion.digital-out-05
+#########################ladder outs#######################################
+
+net start halui.mode.auto
+net start classicladder.0.out-00 => halui.program.run
+net resume classicladder.0.out-01 => halui.program.resume
+net pause classicladder.0.out-02 => halui.program.pause
+net stop classicladder.0.out-03 => halui.program.stop
+
+net ABRE   classicladder.0.out-04 => parport.0.pin-08-out
+#setp parport.0.pin-08-out-invert 1
+net FECHA  classicladder.0.out-05 => parport.0.pin-09-out
+#setp parport.0.pin-09-out-invert 1
+
+
+#net m3 halui.mdi-command-15 <= classicladder.0.out-06
+#net m4 halui.mdi-command-16 <= classicladder.0.out-07
+#net m5 halui.mdi-command-17 <= classicladder.0.out-08
+
+net estop-ext <= classicladder.0.out-09
+
+#net led-erro-oleo classicladder.0.out-10 => pyvcp.LED-NIVEL-OLEO
+
+net led-x classicladder.0.out-11 => pyvcp.LED-SEL-X
+net led-z classicladder.0.out-12 => pyvcp.LED-SEL-Z
+net led-off classicladder.0.out-37 => pyvcp.LED-SEL-OFF
+#net led-RAPIDO classicladder.0.out-13 => pyvcp.LED-RAPIDO
+
+net nivel classicladder.0.out-14 => oleo.trigger
+
+net mpg-ena-x classicladder.0.out-15 => axis.x.jog-enable 
+net mpg-ena-z classicladder.0.out-13 => axis.z.jog-enable 
+
+#net tool-change-confirmed iocontrol.0.tool-changed  => classicladder.0.out-16
+#net lubrifica  parport.0.pin-08-out => classicladder.0.out-17
+
+#net AVANCAR   classicladder.0.out-18 => parport.0.pin-16-out COMENTEI PARA LIBERAR A LOGICA DO CHATGPT E POR NAO USARMOS
+#net RECUAR classicladder.0.out-19 => parport.0.pin-17-out
+
+
+
+net led-ABRE classicladder.0.out-26 => pyvcp.LED-ABRE
+net led-FECHA classicladder.0.out-27 => pyvcp.LED-FECHA
+
+net led-AVANCA classicladder.0.out-28 => pyvcp.LED-AVANCA
+net led-RECUA classicladder.0.out-29 => pyvcp.LED-RECUA
+
+net clear classicladder.0.out-30 =>  axisui.notifications-clear
+
+net CONTA-PECA pyvcp.PECAS <= classicladder.0.s32out-00
+
+setp     scale.1.gain 0.0005
+setp     scale.4.gain 1
+net manivela-scl classicladder.0.floatout-01 => scale.1.in 
+net pend-scale_x axis.x.jog-scale => scale.1.out => scale.4.in
+net pend-scale_Z axis.z.jog-scale => scale.4.out
+
+###########################################################################
+
+
+
+
+
+
+
+
+
+#########################ladder in#########################################
+
+net is-paused halui.program.is-paused => classicladder.0.in-00
+net is-running halui.program.is-running => classicladder.0.in-01
+net spn_is-on halui.spindle.0.is-on => classicladder.0.in-02
+net emg-butt parport.1.pin-09-in  => classicladder.0.in-03 => pyvcp.led-emg-but
+net prog-IS-IDLE not.0.in <= halui.program.is-idle => classicladder.0.in-04
+
+
+net reset <= pyvcp.reset <= classicladder.0.in-06
+net dout-00 => classicladder.0.in-07
+net dout-01 => classicladder.0.in-08
+net dout-02 => classicladder.0.in-09
+net is-moving motion.in-position => classicladder.0.in-10
+net pedal parport.0.pin-12-in-not => classicladder.0.in-11
+net is-manual halui.mode.is-manual => classicladder.0.in-12
+net is-mdi halui.mode.is-mdi => classicladder.0.in-13
+#net ERROX hm2_5i25.0.7i76.0.0.input-04 => classicladder.0.in-14 => pyvcp.LED-ERRO-X
+#net ERROZ hm2_5i25.0.7i76.0.0.input-05 => classicladder.0.in-15 => pyvcp.LED-ERRO-Z
+net dout-03 => classicladder.0.in-15
+#net ERROS hm2_5i25.0.7i76.0.0.input-06 => classicladder.0.in-16 => pyvcp.LED-ERRO-INVERSOR
+#net ERRO_PNEU hm2_5i25.0.7i76.0.0.input-07 => classicladder.0.in-17 => pyvcp.LED-PNEUMATICO
+
+#net AVANCA-py classicladder.0.in-16 => pyvcp.avanca
+net RECUA-py classicladder.0.in-17 => pyvcp.recua
+
+
+#net PRESS_OLEO parport.1.pin-15-in-not => classicladder.0.in-18
+net abrir-py classicladder.0.in-19 => pyvcp.abrir
+net fechar-py classicladder.0.in-20 => pyvcp.fechar
+#net PLACA_ABERTA hm2_5i25.0.7i76.0.0.input-09 => classicladder.0.in-19 => pyvcp.LED-PLACA-ABERTA
+#net PLACA_FECHADA hm2_5i25.0.7i76.0.0.input-10 => classicladder.0.in-20 => pyvcp.LED-PLACA-FECHADA
+
+net bot-start parport.1.pin-06-in-not => classicladder.0.in-22
+#net bot-stop parport.1.pin-08-in-not => classicladder.0.in-23
+net dout-04 => classicladder.0.in-23
+net tool-change  => classicladder.0.in-24
+#net janela-tool classicladder.0.in-25 <=  hal_manualtoolchange.changed
+net GAMA-HI pyvcp.gama.C => classicladder.0.in-26 => motion.digital-in-00
+net GAMA-LO pyvcp.gama.A => classicladder.0.in-27 => motion.digital-in-01
+
+
+
+
+net sel_x parport.1.pin-05-in-not => classicladder.0.in-21
+net sel_z parport.1.pin-04-in-not => classicladder.0.in-37
+net MILES parport.1.pin-07-in-not => classicladder.0.in-29
+net CENT parport.1.pin-10-in-not => classicladder.0.in-28
+
+
+
+net is-on classicladder.0.in-30 => halui.machine.is-on
+net dout-03 => classicladder.0.in-31
+net dout-05 => classicladder.0.in-32
+
+#net pedal-PONTA parport.1.pin-15-in-not => classicladder.0.in-33
+
+net EMG-MANIVELA parport.1.pin-08-in => classicladder.0.in-36 => pyvcp.led-emg-but-mani
+net ERRO-DRIV parport.1.pin-02-in => classicladder.0.in-14 => pyvcp.led-xz
+
+#net z-minus parport.1.pin-04-in => halui.axis.z.minus
+#net z-plus parport.1.pin-05-in-not => halui.axis.z.plus
+
+#net jog-velo-z classicladder.0.floatout-03 halui.axis.jog-speed
+
+
+
+
+
+###################################contador########################################
+
+net preset <= pyvcp.preset <= classicladder.0.floatin-01
+net spindle-fb-filtered-abs-rpm <= classicladder.0.floatin-02
+
+###################################################################################
+
+
+
+
+
